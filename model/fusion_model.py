@@ -28,8 +28,8 @@ class FusionModel(nn.Module):
         self.norm = nn.LayerNorm(d_model)
 
     def forward(self, v_encoded, q_encoded):
-        v_attended = F.softmax(self.mlp_v(v_encoded), dim=-1)
-        q_attended = F.softmax(self.mlp_q(q_encoded), dim=-1)
+        v_attended = F.softmax(self.mlp_v(v_encoded), dim=1)
+        q_attended = F.softmax(self.mlp_q(q_encoded), dim=1)
 
         v_features = (v_attended * v_encoded).sum(dim=1)
         q_features = (q_attended * q_encoded).sum(dim=1)
