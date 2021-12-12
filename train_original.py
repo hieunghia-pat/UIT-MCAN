@@ -108,7 +108,9 @@ def main():
         from_epoch = saved_info["epoch"]
         from_stage = saved_info["stage"]
         from_fold = saved_info["fold"] + 1
-        net = nn.DataParallel(Net(Cfgs(), pretrained_emb=None, token_size=len(vocab.output_cats))).cuda()
+        __C = Cfgs()
+        __C.proc()
+        net = nn.DataParallel(Net(__C, pretrained_emb=None, token_size=len(vocab.stoi), answer_size=len(vocab.output_cats))).cuda()
         net.load_state_dict(saved_info["weights"])
 
     else:
@@ -122,7 +124,9 @@ def main():
     for k in range(from_stage, k_fold):
         print(f"Stage {k+1}:")
         if net is None:
-            net = nn.DataParallel(Net(Cfgs(), pretrained_emb=None, token_size=len(vocab.output_cats))).cuda()
+            __C = Cfgs()
+            __C.proc()
+            net = nn.DataParallel(Net(__C, pretrained_emb=None, token_size=len(vocab.stoi), answer_size=len(vocab.output_cats))).cuda()
         optimizer = optim.Adam([p for p in net.parameters() if p.requires_grad])
 
         tracker = Tracker()
