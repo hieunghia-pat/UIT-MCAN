@@ -103,8 +103,10 @@ class Vocab(object):
         # answer vec will be a vector of answer counts to determine which answers will contribute to the loss.
         # this should be multiplied with 0.1 * negative log-likelihoods that a model produces and then summed up
         # to get the loss that is weighted by how many humans gave that answer
+        one_hot_encoded = torch.zeros(len(self.output_cats))
+        one_hot_encoded[self.output_cats.index(answer)] = 1
 
-        return self.output_cats.index(answer)
+        return one_hot_encoded
 
     def _decode_question(self, question_vecs):
         questions = []
