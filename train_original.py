@@ -46,7 +46,7 @@ def run(net, loaders, fold_idx, stage, optimizer, tracker, train=False, prefix='
             a = a.cuda()
 
             out = net(v, q)
-            scores = metrics.get_scores(out.cpu(), a.cpu())
+            scores = metrics.get_scores(out.cpu(), a.argmax(dim=-1).cpu())
 
             if train:
 
