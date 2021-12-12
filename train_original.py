@@ -39,7 +39,7 @@ def run(net, loaders, fold_idx, stage, optimizer, tracker, train=False, prefix='
         rec_tracker = tracker.track('{}_recall'.format(prefix), tracker_class(**tracker_params))
         f1_tracker = tracker.track('{}_F1'.format(prefix), tracker_class(**tracker_params))
 
-        loss_objective = nn.CrossEntropyLoss(label_smoothing=0.2).cuda()
+        loss_objective = nn.BCEWithLogitsLoss().cuda()
         for v, q, a in tq:
             v = v.cuda()
             q = q.cuda()
