@@ -26,20 +26,17 @@ def run(net, loaders, fold_idx, stage, optimizer, tracker, train=False, prefix='
     if train:
         net.train()
         tracker_class, tracker_params = tracker.MovingMeanMonitor, {'momentum': 0.99}
+        loss_tracker = tracker.track('{}_loss'.format(prefix), tracker_class(**tracker_params)) 
     else:
         net.eval()
         tracker_class, tracker_params = tracker.MeanMonitor, {}
+        acc_tracker = tracker.track('{}_accuracy'.format(prefix), tracker_class(**tracker_params))
+        pre_tracker = tracker.track('{}_precision'.format(prefix), tracker_class(**tracker_params))
+        rec_tracker = tracker.track('{}_recall'.format(prefix), tracker_class(**tracker_params))
+        f1_tracker = tracker.track('{}_F1'.format(prefix), tracker_class(**tracker_params))
 
     for loader in loaders[fold_idx:]:
         tq = tqdm(loader, desc='Epoch {:03d} - {} - Fold {}'.format(epoch, prefix, loaders.index(loader)+1), ncols=0)
-
-        if train:
-            loss_tracker = tracker.track('{}_loss'.format(prefix), tracker_class(**tracker_params)) 
-        else:
-            acc_tracker = tracker.track('{}_accuracy'.format(prefix), tracker_class(**tracker_params))
-            pre_tracker = tracker.track('{}_precision'.format(prefix), tracker_class(**tracker_params))
-            rec_tracker = tracker.track('{}_recall'.format(prefix), tracker_class(**tracker_params))
-            f1_tracker = tracker.track('{}_F1'.format(prefix), tracker_class(**tracker_params))
 
         loss_objective = nn.CrossEntropyLoss(label_smoothing=0.2).cuda()
         for v, q, a in tq:
