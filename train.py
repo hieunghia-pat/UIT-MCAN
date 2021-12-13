@@ -142,12 +142,13 @@ def main():
         f1_test = 0
         for e in range(from_epoch, config.epochs):
             loss = run(net, folds[:-1], from_fold, k, optimizer, tracker, train=True, prefix='Training', epoch=e)
-            val_returned = run(net, [folds[-1]], 0, k, optimizer, tracker, train=False, prefix='Validation', epoch=e)
-            test_returned = run(net, [test_fold], 0, k, optimizer, tracker, train=False, prefix='Evaluation', epoch=e)
-
+            
             if loss:
                 print(f"Training loss: {loss}")
             print("+"*13)
+
+            val_returned = run(net, [folds[-1]], 0, k, optimizer, tracker, train=False, prefix='Validation', epoch=e)
+            test_returned = run(net, [test_fold], 0, k, optimizer, tracker, train=False, prefix='Evaluation', epoch=e)
 
             results = {
                 'tracker': tracker.to_dict(),
