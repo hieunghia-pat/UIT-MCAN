@@ -16,7 +16,7 @@ dataset = 'ViVQA'
 # training config
 epochs = 30
 batch_size = 64
-initial_lr = 5e-4  # default Adam lr
+initial_lr = 5e-5  # default Adam lr
 lr_halflife = 50000  # in iterations
 data_workers = 0
 model_checkpoint = "saved_models"

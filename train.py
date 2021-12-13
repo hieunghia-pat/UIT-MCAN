@@ -62,8 +62,8 @@ def run(net, loaders, fold_idx, stage, optimizer, tracker, train=False, prefix='
             rec_tracker.append(scores["recall"])
             f1_tracker.append(scores["F1"])
             fmt = '{:.4f}'.format
-            tq.set_postfix(loss=fmt(loss_tracker.mean.value), accuracy=fmt(acc_tracker.mean.value), 
-                            precision=fmt(pre_tracker.mean.value), recall=fmt(rec_tracker.mean.value), f1=fmt(f1_tracker.mean.value))
+            tq.set_postfix(loss=fmt(loss.item()), accuracy=fmt(scores["accuracy"]), 
+                            precision=fmt(scores["precision"]), recall=fmt(scores["recall"]), f1=fmt(scores["F1"]))
 
         torch.save({
             "fold": fold_idx+1,
@@ -124,7 +124,7 @@ def main():
         if net is None:
             net = nn.DataParallel(MCAN(vocab, config.backbone, config.d_model, config.embedding_dim, config.dff, config.nheads, 
                                         config.nlayers, config.dropout)).cuda()
-        optimizer = optim.Adam([p for p in net.parameters() if p.requires_grad])
+        optimizer = optim.Adam([p for p in net.parameters() if p.requires_grad], lr=config.initial_lr)
 
         tracker = Tracker()
         config_as_dict = {k: v for k, v in vars(config).items() if not k.startswith('__')}

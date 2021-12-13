@@ -1,4 +1,3 @@
-import torch
 from torch import nn
 from torch.nn import functional as F
 
@@ -6,9 +5,9 @@ class MLP(nn.Module):
     def __init__(self, d_model, dropout=0.1) -> None:
         super(MLP, self).__init__()
 
-        self.fc1 = nn.Linear(d_model, d_model)
+        self.fc1 = nn.Linear(d_model, d_model*2)
         self.dropout = nn.Dropout(dropout)
-        self.fc2 = nn.Linear(d_model, 1)
+        self.fc2 = nn.Linear(d_model*2, 1)
 
     def forward(self, x):
         x = F.relu(self.fc1(x))

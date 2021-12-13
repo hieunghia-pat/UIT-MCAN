@@ -33,9 +33,7 @@ class MCAN(nn.Module):
 
     def subsequent_mask(self, size):
         "Mask out subsequent positions."
-        attn_shape = (size, size)
-        mask = np.triu(np.ones(attn_shape), k=1)
-        return torch.from_numpy(mask).bool()
+        return nn.Transformer.generate_square_subsequent_mask(size)
 
     def forward(self, v, q):
         device = v.device
