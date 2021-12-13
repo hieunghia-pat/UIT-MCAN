@@ -58,11 +58,11 @@ def run(net, loaders, fold_idx, stage, optimizer, tracker, train=False, prefix='
                 optimizer.step()
             else:
                 loss = np.array(0)
-
-            acc_tracker.append(scores["accuracy"])
-            pre_tracker.append(scores["precision"])
-            rec_tracker.append(scores["recall"])
-            f1_tracker.append(scores["F1"])
+                acc_tracker.append(scores["accuracy"])
+                pre_tracker.append(scores["precision"])
+                rec_tracker.append(scores["recall"])
+                f1_tracker.append(scores["F1"])
+                
             fmt = '{:.4f}'.format
             if train:
                 tq.set_postfix(loss=fmt(loss.item()))
@@ -117,10 +117,10 @@ def main():
         from_epoch = saved_info["epoch"]
         from_stage = saved_info["stage"]
         from_fold = saved_info["fold"] + 1
+        loss = saved_info["loss"]
         net = nn.DataParallel(MCAN(vocab, config.backbone, config.d_model, config.embedding_dim, config.dff, config.nheads, 
                                     config.nlayers, config.dropout)).cuda()
         net.load_state_dict(saved_info["weights"])
-        loss = saved_info["loss"]
     else:
         from_epoch = 0
         from_stage = 0
