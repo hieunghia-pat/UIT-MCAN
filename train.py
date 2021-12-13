@@ -72,13 +72,14 @@ def run(net, loaders, fold_idx, stage, optimizer, tracker, train=False, prefix='
 
             tq.update()
 
-        torch.save({
-            "fold": loaders.index(loader),
-            "epoch": epoch,
-            "stage": stage,
-            "loss": loss_tracker.mean.value,
-            "weights": net.state_dict()
-        }, os.path.join(config.tmp_model_checkpoint, "last_model.pth"))
+        if train:
+            torch.save({
+                "fold": loaders.index(loader),
+                "epoch": epoch,
+                "stage": stage,
+                "loss": loss_tracker.mean.value,
+                "weights": net.state_dict()
+            }, os.path.join(config.tmp_model_checkpoint, "last_model.pth"))
 
     if not train:
         return {
