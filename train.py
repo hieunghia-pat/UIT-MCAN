@@ -32,11 +32,14 @@ def run(net, loaders, fold_idx, stage, optimizer, tracker, train=False, prefix='
 
     for loader in loaders[fold_idx:]:
         tq = tqdm(loader, desc='Epoch {:03d} - {} - Fold {}'.format(epoch, prefix, loaders.index(loader)+1), ncols=0)
-        loss_tracker = tracker.track('{}_loss'.format(prefix), tracker_class(**tracker_params))
-        acc_tracker = tracker.track('{}_accuracy'.format(prefix), tracker_class(**tracker_params))
-        pre_tracker = tracker.track('{}_precision'.format(prefix), tracker_class(**tracker_params))
-        rec_tracker = tracker.track('{}_recall'.format(prefix), tracker_class(**tracker_params))
-        f1_tracker = tracker.track('{}_F1'.format(prefix), tracker_class(**tracker_params))
+
+        if train:
+            loss_tracker = tracker.track('{}_loss'.format(prefix), tracker_class(**tracker_params)) 
+        else:
+            acc_tracker = tracker.track('{}_accuracy'.format(prefix), tracker_class(**tracker_params))
+            pre_tracker = tracker.track('{}_precision'.format(prefix), tracker_class(**tracker_params))
+            rec_tracker = tracker.track('{}_recall'.format(prefix), tracker_class(**tracker_params))
+            f1_tracker = tracker.track('{}_F1'.format(prefix), tracker_class(**tracker_params))
 
         loss_objective = nn.CrossEntropyLoss(label_smoothing=0.2).cuda()
         for v, q, a in tq:
@@ -48,27 +51,32 @@ def run(net, loaders, fold_idx, stage, optimizer, tracker, train=False, prefix='
             scores = metrics.get_scores(out.cpu(), a.cpu())
 
             if train:
-
                 optimizer.zero_grad()
                 loss = loss_objective(out, a)
+                loss_tracker.append(loss.item())
                 loss.backward()
                 optimizer.step()
             else:
                 loss = np.array(0)
 
-            loss_tracker.append(loss.item())
             acc_tracker.append(scores["accuracy"])
             pre_tracker.append(scores["precision"])
             rec_tracker.append(scores["recall"])
             f1_tracker.append(scores["F1"])
             fmt = '{:.4f}'.format
-            tq.set_postfix(loss=fmt(loss.item()), accuracy=fmt(scores["accuracy"]), 
-                            precision=fmt(scores["precision"]), recall=fmt(scores["recall"]), f1=fmt(scores["F1"]))
+            if train:
+                tq.set_postfix(loss=fmt(loss.item()))
+            else:
+                tq.set_postfix(accuracy=fmt(acc_tracker.mean.value), 
+                                precision=fmt(pre_tracker.mean.value), recall=fmt(rec_tracker.mean.value), f1=fmt(f1_tracker.mean.value))
+
+            tq.update()
 
         torch.save({
             "fold": fold_idx+1,
             "epoch": epoch,
             "stage": stage,
+            "loss": loss_tracker.mean.value,
             "weights": net.state_dict()
         }, os.path.join(config.tmp_model_checkpoint, "last_model.pth"))
 
@@ -79,6 +87,8 @@ def run(net, loaders, fold_idx, stage, optimizer, tracker, train=False, prefix='
             "recall": rec_tracker.mean.value,
             "F1": f1_tracker.mean.value
         }
+    else:
+        return loss_tracker.mean.value
 
 
 def main():
@@ -110,12 +120,13 @@ def main():
         net = nn.DataParallel(MCAN(vocab, config.backbone, config.d_model, config.embedding_dim, config.dff, config.nheads, 
                                     config.nlayers, config.dropout)).cuda()
         net.load_state_dict(saved_info["weights"])
-
+        loss = saved_info["loss"]
     else:
         from_epoch = 0
         from_stage = 0
         from_fold = 0
         net = None
+        loss = None
     
     k_fold = len(folds) - 1
 
@@ -132,10 +143,12 @@ def main():
         max_f1 = 0 # for saving the best model
         f1_test = 0
         for e in range(from_epoch, config.epochs):
-            run(net, folds[:-1], from_fold, k, optimizer, tracker, train=True, prefix='Training', epoch=e)
+            loss = run(net, folds[:-1], from_fold, k, optimizer, tracker, train=True, prefix='Training', epoch=e)
             val_returned = run(net, [folds[-1]], 0, k, optimizer, tracker, train=False, prefix='Validation', epoch=e)
             test_returned = run(net, [test_fold], 0, k, optimizer, tracker, train=False, prefix='Evaluation', epoch=e)
 
+            if loss:
+                print(f"Training loss: {loss}")
             print("+"*13)
 
             results = {
