@@ -62,7 +62,7 @@ def run(net, loaders, fold_idx, stage, optimizer, tracker, train=False, prefix='
                 pre_tracker.append(scores["precision"])
                 rec_tracker.append(scores["recall"])
                 f1_tracker.append(scores["F1"])
-                
+
             fmt = '{:.4f}'.format
             if train:
                 tq.set_postfix(loss=fmt(loss.item()))
@@ -73,7 +73,7 @@ def run(net, loaders, fold_idx, stage, optimizer, tracker, train=False, prefix='
             tq.update()
 
         torch.save({
-            "fold": fold_idx+1,
+            "fold": loaders.index(loader),
             "epoch": epoch,
             "stage": stage,
             "loss": loss_tracker.mean.value,
