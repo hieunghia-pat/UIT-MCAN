@@ -21,7 +21,7 @@ import os
 total_iterations = 0
 metrics = Metrics()
 
-def run(net, loaders, fold_idx, stage, optimizer, tracker, train=False, prefix='', epoch=0):
+def run(net, loaders, fold_idx, optimizer, tracker, train=False, prefix='', epoch=0):
     """ Run an epoch over the given loader """
     if train:
         net.train()
@@ -73,7 +73,6 @@ def run(net, loaders, fold_idx, stage, optimizer, tracker, train=False, prefix='
             torch.save({
                 "fold": loaders.index(loader),
                 "epoch": epoch,
-                "stage": stage,
                 "loss": loss_tracker.mean.value,
                 "weights": net.state_dict()
             }, os.path.join(config.tmp_model_checkpoint, "last_model.pth"))
@@ -113,7 +112,6 @@ def main():
     if config.start_from:
         saved_info = torch.load(config.start_from)
         from_epoch = saved_info["epoch"]
-        from_stage = saved_info["stage"]
         from_fold = saved_info["fold"] + 1
         loss = saved_info["loss"]
         net = nn.DataParallel(MCAN(vocab, config.backbone, config.d_model, config.embedding_dim, config.dff, config.nheads, 
@@ -121,67 +119,54 @@ def main():
         net.load_state_dict(saved_info["weights"])
     else:
         from_epoch = 0
-        from_stage = 0
         from_fold = 0
         net = None
         loss = None
-    
-    k_fold = len(folds) - 1
 
-    for k in range(from_stage, k_fold):
-        print(f"Stage {k+1}:")
-        if net is None:
-            net = nn.DataParallel(MCAN(vocab, config.backbone, config.d_model, config.embedding_dim, config.dff, config.nheads, 
-                                        config.nlayers, config.dropout)).cuda()
-        optimizer = optim.Adam([p for p in net.parameters() if p.requires_grad], lr=config.initial_lr)
+    if net is None:
+        net = nn.DataParallel(MCAN(vocab, config.backbone, config.d_model, config.embedding_dim, config.dff, config.nheads, 
+                                    config.nlayers, config.dropout)).cuda()
+    optimizer = optim.Adam([p for p in net.parameters() if p.requires_grad], lr=config.initial_lr)
 
-        tracker = Tracker()
-        config_as_dict = {k: v for k, v in vars(config).items() if not k.startswith('__')}
+    tracker = Tracker()
+    config_as_dict = {k: v for k, v in vars(config).items() if not k.startswith('__')}
 
-        max_f1 = 0 # for saving the best model
-        f1_test = 0
-        for e in range(from_epoch, config.epochs):
-            loss = run(net, folds[:-1], from_fold, k, optimizer, tracker, train=True, prefix='Training', epoch=e)
-            
-            if loss:
-                print(f"Training loss: {loss}")
-            print("+"*13)
-
-            val_returned = run(net, [folds[-1]], 0, k, optimizer, tracker, train=False, prefix='Validation', epoch=e)
-            test_returned = run(net, [test_fold], 0, k, optimizer, tracker, train=False, prefix='Evaluation', epoch=e)
-
-            results = {
-                'tracker': tracker.to_dict(),
-                'config': config_as_dict,
-                'weights': net.state_dict(),
-                'eval': {
-                    'accuracy': val_returned["accuracy"],
-                    "precision": val_returned["precision"],
-                    "recall": val_returned["recall"],
-                    "f1-val": val_returned["F1"],
-                    "f1-test": test_returned["F1"]
-
-                },
-                'vocab': train_dataset.vocab,
-            }
+    max_f1 = 0 # for saving the best model
+    for e in range(from_epoch, config.epochs):
+        loss = run(net, folds, from_fold, optimizer, tracker, train=True, prefix='Training', epoch=e)
         
-            torch.save(results, os.path.join(config.model_checkpoint, f"model_last_stage_{k+1}.pth"))
-            if val_returned["F1"] > max_f1:
-                max_f1 = val_returned["F1"]
-                f1_test = test_returned["F1"]
-                torch.save(results, os.path.join(config.model_checkpoint, f"model_best_stage_{k+1}.pth"))
+        if loss:
+            print(f"Training loss: {loss}")
+        print("+"*13)
 
-            from_fold = 0
+        test_returned = run(net, [test_fold], 0, optimizer, tracker, train=False, prefix='Evaluation', epoch=e)
 
-        from_epoch = 0
+        results = {
+            'tracker': tracker.to_dict(),
+            'config': config_as_dict,
+            'weights': net.state_dict(),
+            'eval': {
+                'accuracy': test_returned["accuracy"],
+                "precision": test_returned["precision"],
+                "recall": test_returned["recall"],
+                "f1-val": test_returned["F1"],
+                "f1-test": test_returned["F1"]
 
-        print(f"Finished for stage {k+1}. Best F1 score: {max_f1}. F1 score on test set: {f1_test}")
-        print("="*31)
+            },
+            'vocab': train_dataset.vocab,
+        }
+    
+        torch.save(results, os.path.join(config.model_checkpoint, f"model_last.pth"))
+        if test_returned["F1"] > max_f1:
+            max_f1 = test_returned["F1"]
+            torch.save(results, os.path.join(config.model_checkpoint, f"model_best.pth"))
 
-        # change roles of the folds
-        tmp = folds[0]
-        folds[:-1] = folds[1:]
-        folds[-1] = tmp
+        from_fold = 0
+
+    from_epoch = 0
+
+    print(f"Training finished. Best F1 score on test set: {max_f1}.")
+    print("="*31)
 
 if __name__ == '__main__':
     main()
