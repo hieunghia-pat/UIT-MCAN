@@ -96,7 +96,7 @@ def main():
         vocab = pickle.load(open(os.path.join(config.model_checkpoint, "vocab.pkl"), "rb"))
     else:
         vocab = Vocab([config.json_train_path, config.json_test_path], 
-                            specials=["<pad>", "<sos", "<eos>"])
+                            specials=["<pad>", "<sos", "<eos>"], vectors=config.word_embedding)
         pickle.dump(vocab, open(os.path.join(config.model_checkpoint, "vocab.pkl"), "wb"))
 
     metrics.vocab = vocab
