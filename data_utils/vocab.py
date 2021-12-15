@@ -93,7 +93,7 @@ class Vocab(object):
         vec = torch.ones(self.max_question_length).long() * self.stoi["<pad>"]
         for i, token in enumerate(question):
             vec[i] = self.stoi[token]
-        return vec, len(question)
+        return vec
 
     def _encode_answer(self, answer):
         """ Turn an answer into a vector """
