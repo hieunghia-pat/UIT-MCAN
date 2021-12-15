@@ -32,4 +32,4 @@ dff = 1024
 nheads = 8
 nlayers = 4
 dropout = 0.5
-word_embedding = None
+word_embedding = "fasttext.vi.300d"

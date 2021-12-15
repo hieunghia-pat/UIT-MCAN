@@ -56,3 +56,4 @@ def unk_init(token, dim):
         return torch.ones(dim)
     if token in ["<eos>", "</s>"]:
         return torch.ones(dim) * 2
+    return torch.ones(dim) * 3
