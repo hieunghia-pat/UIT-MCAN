@@ -5,6 +5,8 @@ class TextEmbedding(nn.Module):
         super(TextEmbedding, self).__init__()
 
         self.embedding = nn.Embedding(len(vocab.stoi), embedding_dim, padding_idx=vocab.stoi["<pad>"])
+        if vocab.vectors is not None:
+            self.embedding.from_pretrained(vocab.vectors)
         self.proj = nn.Linear(embedding_dim, d_model)
         self.dropout = nn.Dropout(dropout)
 

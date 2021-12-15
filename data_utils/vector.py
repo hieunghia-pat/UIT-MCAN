@@ -51,7 +51,7 @@ class Vectors(object):
         self.stoi = None
         self.vectors = None
         self.dim = None
-        self.unk_init = torch.Tensor.zero_ if unk_init is None else unk_init
+        self.unk_init = unk_init
         self.cache(name, cache, url=url, max_vectors=max_vectors)
 
 
@@ -59,7 +59,10 @@ class Vectors(object):
         if token in self.stoi:
             return self.vectors[self.stoi[token]]
         else:
-            return self.unk_init(torch.Tensor(self.dim))
+            if self.unk_init is None:
+                return torch.Tensor.zero_(torch.Tensor(self.dim))
+            else:
+                return self.unk_init(token, self.dim)
 
     def cache(self, name, cache, url=None, max_vectors=None):
         import ssl
@@ -203,15 +206,15 @@ class Vectors(object):
 
 class PhoW2V(Vectors):
     url = {
-        "syllable.100": "https://public.vinai.io/word2vec_vi_syllables_100dims.zip",
-        "syllable.300": "https://public.vinai.io/word2vec_vi_syllables_300dims.zip",
-        "word.100": "https://public.vinai.io/word2vec_vi_words_100dims.zip",
-        "word.300": "https://public.vinai.io/word2vec_vi_words_300dims.zip",
+        "word2vec_vi_syllables_100dims": "https://public.vinai.io/word2vec_vi_syllables_100dims.zip",
+        "word2vec_vi_syllables_300dims": "https://public.vinai.io/word2vec_vi_syllables_300dims.zip",
+        "word2vec_vi_words_100dims": "https://public.vinai.io/word2vec_vi_words_100dims.zip",
+        "word2vec_vi_words_300dims": "https://public.vinai.io/word2vec_vi_words_300dims.zip",
     }
 
-    def __init__(self, name='word', dim=300, **kwargs):
+    def __init__(self, name, **kwargs):
         url = self.url[name]
-        name = '{}.{}d.txt'.format(name, str(dim))
+        name = '{}.txt'.format(name)
         super(PhoW2V, self).__init__(name, url=url, **kwargs)
 
 class ViFastText(Vectors):
@@ -225,6 +228,8 @@ class ViFastText(Vectors):
 
 pretrained_aliases = {
     "fasttext.vi.300d": partial(ViFastText),
-    "phow2v.syllable.100d": partial(PhoW2V, name="syllable", dim=100),
-    "phow2v.syllable.300d": partial(PhoW2V, name="syllable", dim=300),
+    "phow2v.syllable.100d": partial(PhoW2V, name="word2vec_vi_syllables_100dims"),
+    "phow2v.syllable.300d": partial(PhoW2V, name="word2vec_vi_syllables_300dims"),
+    "phow2v.word.100d": partial(PhoW2V, name="word2vec_vi_words_100dims"),
+    "phow2v.word.300d": partial(PhoW2V, name="word2vec_vi_words_300dims")
 }

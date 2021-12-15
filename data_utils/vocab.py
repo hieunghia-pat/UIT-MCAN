@@ -1,8 +1,7 @@
-from numpy.core.fromnumeric import argmax
 import torch
 from data_utils.vector import Vectors
 from data_utils.vector import pretrained_aliases
-from data_utils.utils import preprocess_answer, preprocess_question
+from data_utils.utils import preprocess_answer, preprocess_question, unk_init
 from collections import defaultdict, Counter
 import logging
 import six
@@ -24,7 +23,7 @@ class Vocab(object):
         itos: A list of token strings indexed by their numerical identifiers.
     """
     def __init__(self, json_dirs, max_size=None, min_freq=1, specials=['<pad>', "<sos>", "<eos>", "<unk>"],
-                 vectors=None, unk_init=None, vectors_cache=None):
+                 vectors=None, unk_init=unk_init, vectors_cache=None):
         """Create a Vocab object from a collections.Counter.
         Arguments:
             counter: collections.Counter object holding the frequencies of
@@ -72,8 +71,6 @@ class Vocab(object):
         self.vectors = None
         if vectors is not None:
             self.load_vectors(vectors, unk_init=unk_init, cache=vectors_cache)
-        else:
-            assert unk_init is None and vectors_cache is None
 
     def make_vocab(self, json_dirs):
         self.freqs = Counter()
@@ -96,14 +93,17 @@ class Vocab(object):
         vec = torch.ones(self.max_question_length).long() * self.stoi["<pad>"]
         for i, token in enumerate(question):
             vec[i] = self.stoi[token]
-        return vec
+        return vec, len(question)
 
     def _encode_answer(self, answer):
         """ Turn an answer into a vector """
         # answer vec will be a vector of answer counts to determine which answers will contribute to the loss.
         # this should be multiplied with 0.1 * negative log-likelihoods that a model produces and then summed up
         # to get the loss that is weighted by how many humans gave that answer
-        return self.output_cats.index(answer)
+        answer_vec = torch.zeros(len(self.output_cats))
+        answer_vec[self.output_cats.index(answer)] = 1
+
+        return answer_vec
 
     def _decode_question(self, question_vecs):
         questions = []
@@ -113,8 +113,7 @@ class Vocab(object):
         return questions
 
     def _decode_answer(self, predicted):
-        if predicted.dim() > 1:
-            predicted = predicted.argmax(dim=-1).long().tolist()
+        predicted = torch.argmax(predicted, dim=-1).tolist()
         answers = []
         for idx in predicted:
             answers.append(self.output_cats[idx])
