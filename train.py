@@ -137,7 +137,6 @@ def main():
         
         if loss:
             print(f"Training loss: {loss}")
-        print("+"*13)
 
         test_returned = run(net, [test_fold], 0, optimizer, tracker, train=False, prefix='Evaluation', epoch=e)
 
@@ -162,6 +161,8 @@ def main():
             torch.save(results, os.path.join(config.model_checkpoint, f"model_best.pth"))
 
         from_fold = 0
+
+        print("+"*13)
 
     from_epoch = 0
 
