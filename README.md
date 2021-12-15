@@ -26,4 +26,11 @@ Train the MCAN method with the following command:
 python3 train.py
 ```
 
-We especially design this method to train with Vietnamse pretrained word-embedding. To use pretrained word-embedding, open `config.py` 
+We especially design this method to train with Vietnamse pretrained word-embedding. To use pretrained word-embedding, open `config.py` then set word_embedding to the pretrained word-embedding you want:
+```
+"fasttext.vi.300d"
+"phow2v.syllable.100d"
+"phow2v.syllable.300d"
+"phow2v.word.100d"
+"phow2v.word.300d"
+```
